@@ -1,12 +1,15 @@
-const path = require("path")
-const CopyPlugin = require("copy-webpack-plugin")
-const HtmlWebpackPlugin = require("html-webpack-plugin")
+const path = require("path");
+const CopyPlugin = require("copy-webpack-plugin");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = {
   entry: "./src/index.ts",
+  externals: {
+    CANNON: "cannon",
+  },
   output: {
     path: path.resolve(__dirname, "./dist"),
-    filename: '[name].[contenthash].js',
+    filename: "[name].[contenthash].js",
   },
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".glsl"],
@@ -19,12 +22,10 @@ module.exports = {
   },
   plugins: [
     new CopyPlugin({
-        patterns: [
-            { from: "public" },
-        ],
+      patterns: [{ from: "public" }],
     }),
     new HtmlWebpackPlugin({
       template: "!!handlebars-loader!src/index.hbs",
     }),
   ],
-}
+};
