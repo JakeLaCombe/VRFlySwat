@@ -19,6 +19,12 @@ import {
   StandardMaterial,
   UniversalCamera,
 } from "@babylonjs/core";
+import {
+  Button3D,
+  GUI3DManager,
+  StackPanel3D,
+  TextBlock,
+} from "@babylonjs/gui";
 
 enum State {
   START = 0,
@@ -79,6 +85,12 @@ class App {
 
     let light = new HemisphericLight("light", Vector3.Zero(), scene);
 
+    let manager = new GUI3DManager(scene);
+    let panel = new StackPanel3D();
+    panel.margin = 0.02;
+    manager.addControl(panel);
+    this.startGameButton(panel);
+
     // Create camera
     var camera = new UniversalCamera(
       "UniversalCamera",
@@ -93,7 +105,7 @@ class App {
     camera.attachControl(this._canvas, true);
 
     var ground = Mesh.CreatePlane("ground", 25.0, scene);
-    ground.position = new Vector3(0, -10, 0);
+    ground.position = new Vector3(0, 0, 0);
     ground.rotation = new Vector3(Math.PI / 2, 0, 0);
 
     ground.material = new StandardMaterial("groundMat", scene);
@@ -135,6 +147,45 @@ class App {
     vrHelper.enableInteractions();
 
     return scene;
+  }
+
+  addSphere(scene: Scene) {
+    // Create sphere
+    var sphereLight = new DirectionalLight(
+      "dir02",
+      new Vector3(0.2, -1, 0),
+      scene
+    );
+    sphereLight.position = new Vector3(0, 80, 0);
+
+    var sphere: Mesh = MeshBuilder.CreateSphere(
+      "sphere",
+      { diameter: 1 },
+      scene
+    );
+    sphere.position.y = 5;
+    sphere.material = new StandardMaterial("sphere material", scene);
+    sphere.physicsImpostor = new PhysicsImpostor(
+      sphere,
+      PhysicsImpostor.SphereImpostor,
+      { mass: 1 },
+      scene
+    );
+    var shadowGenerator = new ShadowGenerator(2048, sphereLight);
+    shadowGenerator.addShadowCaster(sphere);
+  }
+
+  startGameButton(panel: StackPanel3D) {
+    var button = new Button3D();
+    panel.addControl(button);
+    button.onPointerUpObservable.add(function () {
+      this.addSphere(this._scene);
+    });
+    var text1 = new TextBlock();
+    text1.text = "Start Game";
+    text1.color = "white";
+    text1.fontSize = 24;
+    button.content = text1;
   }
 
   private async _goToStart() {
