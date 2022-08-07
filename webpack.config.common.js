@@ -18,6 +18,14 @@ module.exports = {
     rules: [
       { test: /\.tsx?$/, loader: "ts-loader" },
       { test: /\.glsl$/, loader: "webpack-glsl-loader" },
+      {
+        test: /\.(png|jpe?g|gif|glb|gltf|babylon)$/i,
+        loader: "file-loader",
+        options: {
+          publicPath: "./",
+          name: "[name].[ext]",
+        },
+      },
     ],
   },
   plugins: [

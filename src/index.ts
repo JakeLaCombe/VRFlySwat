@@ -1,3 +1,6 @@
+import "@babylonjs/loaders/glTF";
+import "@babylonjs/inspector";
+
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
@@ -8,6 +11,9 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import * as cannon from "cannon";
 
 import { SampleMaterial } from "./Materials/SampleMaterial";
+import FlySwatter from "./Models/Fly_Swatter.glb";
+import Fly from "./Models/fly3.glb";
+
 import {
   CannonJSPlugin,
   Color4,
@@ -15,6 +21,7 @@ import {
   FreeCamera,
   Mesh,
   PhysicsImpostor,
+  SceneLoader,
   ShadowGenerator,
   StandardMaterial,
   UniversalCamera,
@@ -25,6 +32,7 @@ import {
   StackPanel3D,
   TextBlock,
 } from "@babylonjs/gui";
+import { Game } from "./Scenes/Game";
 
 enum State {
   START = 0,
@@ -63,6 +71,10 @@ class App {
 
     // run the main render loop
     this._engine.runRenderLoop(() => {
+      if (this._scene instanceof Game) {
+        this._scene.update();
+      }
+
       this._scene.render();
     });
   }
@@ -80,43 +92,12 @@ class App {
   _createScene(): Scene {
     // Create scene
     let scene: Scene = new Scene(this._engine);
-    let gravityVector = new Vector3(0, -1, 0);
-    scene.enablePhysics(gravityVector, new CannonJSPlugin(true, 10, cannon));
-
-    let light = new HemisphericLight("light", Vector3.Zero(), scene);
 
     let manager = new GUI3DManager(scene);
     let panel = new StackPanel3D();
     panel.margin = 0.02;
     manager.addControl(panel);
     this.startGameButton(panel);
-
-    // Create camera
-    var camera = new UniversalCamera(
-      "UniversalCamera",
-      new Vector3(0, 0, -10),
-      scene
-    );
-    camera.checkCollisions = true;
-    camera.applyGravity = true;
-    // Targets the camera to a particular position. In this case the scene origin
-    camera.setTarget(Vector3.Zero());
-
-    camera.attachControl(this._canvas, true);
-
-    var ground = Mesh.CreatePlane("ground", 25.0, scene);
-    ground.position = new Vector3(0, 0, 0);
-    ground.rotation = new Vector3(Math.PI / 2, 0, 0);
-
-    ground.material = new StandardMaterial("groundMat", scene);
-    ground.material.backFaceCulling = false;
-    ground.receiveShadows = true;
-    ground.physicsImpostor = new PhysicsImpostor(
-      ground,
-      PhysicsImpostor.BoxImpostor,
-      { mass: 0, friction: 1, restitution: 0 },
-      scene
-    );
 
     var sphereLight = new DirectionalLight(
       "dir02",
@@ -125,22 +106,16 @@ class App {
     );
     sphereLight.position = new Vector3(0, 80, 0);
 
-    // Create sphere
-    var sphere1: Mesh = MeshBuilder.CreateSphere(
-      "sphere",
-      { diameter: 1 },
+    // Create camera
+    var camera = new UniversalCamera(
+      "UniversalCamera",
+      new Vector3(0, 0, -10),
       scene
     );
-    sphere1.position.y = 5;
-    sphere1.material = new StandardMaterial("sphere material", scene);
-    sphere1.physicsImpostor = new PhysicsImpostor(
-      sphere1,
-      PhysicsImpostor.SphereImpostor,
-      { mass: 1 },
-      scene
-    );
-    var shadowGenerator = new ShadowGenerator(2048, sphereLight);
-    shadowGenerator.addShadowCaster(sphere1);
+
+    camera.setTarget(Vector3.Zero());
+
+    camera.attachControl(this._canvas, true);
 
     // Enable VR
     var vrHelper = scene.createDefaultVRExperience();
@@ -149,37 +124,12 @@ class App {
     return scene;
   }
 
-  addSphere(scene: Scene) {
-    // Create sphere
-    var sphereLight = new DirectionalLight(
-      "dir02",
-      new Vector3(0.2, -1, 0),
-      scene
-    );
-    sphereLight.position = new Vector3(0, 80, 0);
-
-    var sphere: Mesh = MeshBuilder.CreateSphere(
-      "sphere",
-      { diameter: 1 },
-      scene
-    );
-    sphere.position.y = 5;
-    sphere.material = new StandardMaterial("sphere material", scene);
-    sphere.physicsImpostor = new PhysicsImpostor(
-      sphere,
-      PhysicsImpostor.SphereImpostor,
-      { mass: 1 },
-      scene
-    );
-    var shadowGenerator = new ShadowGenerator(2048, sphereLight);
-    shadowGenerator.addShadowCaster(sphere);
-  }
-
   startGameButton(panel: StackPanel3D) {
     var button = new Button3D();
     panel.addControl(button);
-    button.onPointerUpObservable.add(function () {
-      this.addSphere(this._scene);
+    button.onPointerUpObservable.add(() => {
+      this._scene = new Game(this._engine);
+      panel.removeControl(button);
     });
     var text1 = new TextBlock();
     text1.text = "Start Game";
