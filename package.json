@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "webpack-dev-server --config webpack.config.dev.js",
+    "start": "webpack serve --port 8080",
+    "start-https": "webpack serve --port 443 --https --host 0.0.0.0",
     "build": "webpack --config webpack.config.prod.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -18,7 +19,7 @@
     "ts-loader": "^8.1.0",
     "typescript": "^4.2.3",
     "webpack": "^5.28.0",
-    "webpack-cli": "^3.3.12",
+    "webpack-cli": "^4.6.0",
     "webpack-dev-server": "^3.11.2",
     "webpack-glsl-loader": "^1.0.1",
     "webpack-merge": "^5.7.3"

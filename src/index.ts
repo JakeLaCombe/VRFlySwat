@@ -15,6 +15,7 @@ import FlySwatter from "./Models/Fly_Swatter.glb";
 import Fly from "./Models/fly3.glb";
 
 import {
+  Axis,
   CannonJSPlugin,
   Color4,
   DirectionalLight,
@@ -25,6 +26,7 @@ import {
   ShadowGenerator,
   StandardMaterial,
   UniversalCamera,
+  WebXRDefaultExperience,
 } from "@babylonjs/core";
 import {
   Button3D,
@@ -43,39 +45,44 @@ enum State {
 
 class App {
   private _scene: Scene;
+  private _gameScene: Game;
   private _canvas: HTMLCanvasElement;
   private _engine: Engine;
+  private _renderGamePlay: boolean;
 
   //Scene - related
   private _state: number = 0;
 
   constructor() {
     this._canvas = this._createCanvas();
+    this._renderGamePlay = false;
 
     // initialize babylon scene and engine
     this._engine = new Engine(this._canvas, true);
 
     this._scene = this._createScene();
+    this._gameScene = new Game(this._engine);
 
     // hide/show the Inspector
     window.addEventListener("keydown", (ev) => {
       // Shift+Ctrl+Alt+I
       if (ev.shiftKey && ev.ctrlKey && ev.altKey && ev.keyCode === 73) {
         if (this._scene.debugLayer.isVisible()) {
-          this._scene.debugLayer.hide();
+          this._gameScene.debugLayer.hide();
         } else {
-          this._scene.debugLayer.show();
+          this._gameScene.debugLayer.show();
         }
       }
     });
 
     // run the main render loop
     this._engine.runRenderLoop(() => {
-      if (this._scene instanceof Game) {
-        this._scene.update();
+      if (this._renderGamePlay) {
+        this._gameScene.update();
+        this._gameScene.render();
+      } else {
+        this._scene.render();
       }
-
-      this._scene.render();
     });
   }
 
@@ -118,18 +125,20 @@ class App {
     camera.attachControl(this._canvas, true);
 
     // Enable VR
-    var vrHelper = scene.createDefaultVRExperience();
-    vrHelper.enableInteractions();
-
+    this.setupVr(scene);
     return scene;
+  }
+
+  async setupVr(scene: Scene): Promise<WebXRDefaultExperience> {
+    let xr = await scene.createDefaultXRExperienceAsync();
+    return xr;
   }
 
   startGameButton(panel: StackPanel3D) {
     var button = new Button3D();
     panel.addControl(button);
     button.onPointerUpObservable.add(() => {
-      this._scene = new Game(this._engine);
-      panel.removeControl(button);
+      this._renderGamePlay = true;
     });
     var text1 = new TextBlock();
     text1.text = "Start Game";

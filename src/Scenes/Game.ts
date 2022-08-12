@@ -14,24 +14,14 @@ import FlySwatter from "../Models/Fly_Swatter.glb";
 import Fly from "../Models/fly3.glb";
 
 import {
+  Axis,
   CannonJSPlugin,
-  Color4,
-  DirectionalLight,
-  FreeCamera,
   ISceneLoaderAsyncResult,
-  Mesh,
   PhysicsImpostor,
   SceneLoader,
-  ShadowGenerator,
   StandardMaterial,
   UniversalCamera,
 } from "@babylonjs/core";
-import {
-  Button3D,
-  GUI3DManager,
-  StackPanel3D,
-  TextBlock,
-} from "@babylonjs/gui";
 
 enum State {
   START = 0,
@@ -41,13 +31,9 @@ enum State {
 }
 
 export class Game extends Scene {
-  private _scene: Scene;
   private _canvas: HTMLCanvasElement;
   private _fly: ISceneLoaderAsyncResult;
   private _swatter: ISceneLoaderAsyncResult;
-
-  //Scene - related
-  private _state: number = 0;
 
   constructor(engine: Engine) {
     super(engine);
@@ -57,6 +43,27 @@ export class Game extends Scene {
 
     this._constructCamera();
     this.constructEnemies();
+
+    this.createDefaultXRExperienceAsync().then((xr) => {
+      xr.input.onControllerAddedObservable.add(async (controller) => {
+        if (controller.inputSource.handedness === "right") {
+          let swatter = await SceneLoader.ImportMeshAsync(
+            "",
+            "",
+            FlySwatter,
+            this
+          );
+          swatter.meshes[0].name = "Swatter";
+          swatter.meshes[0].position = new Vector3(0.0, 0.0, 0.5);
+          swatter.meshes[0].scaling = new Vector3(0.25, 0.25, 0.25);
+          swatter.meshes[0].rotate(Axis.X, -Math.PI / 2);
+          swatter.meshes[0].parent = controller.grip || controller.pointer;
+
+          xr.input.onControllerRemovedObservable.add(() => {});
+          this._swatter = swatter;
+        }
+      });
+    });
   }
 
   _constructCamera() {
@@ -86,33 +93,26 @@ export class Game extends Scene {
       this
     );
 
-    var sphereLight = new HemisphericLight(
-      "dir02",
-      new Vector3(0.2, -1, 0),
-      this
-    );
-
-    console.log("Constructed Cameras");
+    new HemisphericLight("dir02", new Vector3(0.2, -1, 0), this);
   }
 
   async constructEnemies() {
-    let swatter = await SceneLoader.ImportMeshAsync("", "", FlySwatter, this);
-    swatter.meshes[0].name = "Swatter";
-    swatter.meshes[0].position = new Vector3(0.0, 0.0, -1.0);
-
     let fly = await SceneLoader.ImportMeshAsync("", "", Fly, this);
     fly.meshes[0].name = "Fly";
-    fly.meshes[0].position = new Vector3(0.0, 1.0, -5.0);
+    fly.meshes[0].position = new Vector3(0.0, 1.0, -8.5);
     fly.meshes[0].scaling = new Vector3(20.0, 20.0, 20.0);
 
     this._fly = fly;
-
-    this._swatter = swatter;
   }
 
   update() {
-    if (this._fly) {
+    if (this._fly && this._swatter) {
       this._fly.meshes[0].translate(new Vector3(1, 0, 0), 0.0001);
+
+      if (this._fly.meshes[0].intersectsMesh(this._swatter.meshes[2])) {
+        this._fly.meshes[0].dispose();
+        this._fly = null;
+      }
     }
   }
 }
